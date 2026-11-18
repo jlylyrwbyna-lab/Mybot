@@ -1,0 +1,108 @@
+import logging
+from telegram import Update, InlineKeyboardMarkup, In>
+from telegram.ext import ApplicationBuilder, ContextT>
+
+# خواندن لیست انیمه‌ها از فایل جداگانه
+try:
+    from anime_data import ANIME_DATABASE
+except ImportError:
+    ANIME_DATABASE = {}
+
+logging.basicConfig(format="%(asctime)s - %(name)s - >
+
+TOKEN = 
+CHANNEL_USERNAME = "Lx_Anime"
+CHANNEL_LINK = "https://t.me/Lx_Anime"
+
+# لیست یوزرنیم‌های ادمین (بدون علامت @)
+ADMIN_USERNAMES = {"a12354688", "lxanime1"}
+
+async def check_membership(user_id: int, context: Con>
+    try:
+        member = await context.bot.get_chat_member(ch>
+        if member.status in ["member", "administrator>
+            return True
+    except:
+        pass
+    return False
+
+async def send_anime_with_timer(context: ContextTypes>
+    if payload in ANIME_DATABASE:
+        file_id, caption = ANIME_DATABASE[payload]
+        warn_msg = await context.bot.send_message(cha>
+        anime_msg = await context.bot.send_document(c>
+
+        context.job_queue.run_once(lambda ctx: ctx.bo>
+        context.job_queue.run_once(lambda ctx: ctx.bo>
+    else:
+        await context.bot.send_message(chat_id=user.i>
+
+async def start(update: Update, context: ContextTypes>
+    user = update.effective_user
+    chat_id = update.effective_chat.id
+    payload = context.args[0] if context.args else No>
+
+    if not payload:
+        await update.message.reply_text("سلام! برای د>return
+
+    is_member = await check_membership(user.id, conte>
+
+    if is_member:
+        await send_anime_with_timer(context, user, pa>
+    else:
+        keyboard = [[InlineKeyboardButton("📢 عضویت د>
+                     [InlineKeyboardButton("✅ من عضو>
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        sent_msg = await update.message.reply_text(f">
+        context.job_queue.run_once(lambda ctx: ctx.bo>
+
+async def list_anime(update: Update, context: Context>
+    user = update.effective_user
+
+    # بررسی ادمین بودن
+    if not user.username or user.username.lower() not>
+        await update.message.reply_text("⛔ شما اجازه>
+        return
+
+    if not ANIME_DATABASE:
+        await update.message.reply_text("📭 هنوز هیچ >
+        return
+
+    text = "📋 **لیست انیمه‌های ثبت شده:**\n\n"
+    for code, (file_id, caption) in ANIME_DATABASE.it>
+        text += f"🔹 **کد:** `{code}`\n   📌 **توضیحا>
+
+    await update.message.reply_text(text, parse_mode=>
+
+async def button_callback(update: Update, context: Co>
+    query = update.callback_query
+    user = query.from_user
+    await query.answer()
+
+    if query.data.startswith("check_join"):
+        payload = query.data.replace("check_join_", ">
+        if await check_membership(user.id, context):
+            try: await query.message.delete()
+            except: pass
+            await send_anime_with_timer(context, user>
+        else:
+            await query.answer("❌ هنوز عضو نشده‌ای!",>
+
+def main():app = (
+        ApplicationBuilder()
+        .token(TOKEN)
+        .read_timeout(30)
+        .write_timeout(30)
+        .connect_timeout(30)
+        .build()
+    )
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("list", list_anime>
+    app.add_handler(CallbackQueryHandler(button_callb>
+
+    print("✅ ربات بدون مشکل آماده اجراست...")
+    app.run_polling(poll_interval=0.5)
+
+if __name__ == "__main__":
+    main()
