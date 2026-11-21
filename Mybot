@@ -10,7 +10,7 @@ except ImportError:
 
 logging.basicConfig(format="%(asctime)s - %(name)s - >
 
-TOKEN = "8772365683:AAH6ihtMEEb5iVbODpPIAJhjiwDsUoSZq>
+TOKEN =
 CHANNEL_USERNAME = "Lx_Anime"
 CHANNEL_LINK = "https://t.me/Lx_Anime"
 
